@@ -6,6 +6,7 @@ SCREEN_SIZE = (1280, 720)
 
 
 class Vector:
+    """Класс векторов"""
     def __init__(self, coordinates):
         self.coordinates = coordinates
 
@@ -30,10 +31,12 @@ class Vector:
 
 
 class Line:
+    """Класс замкнутых ломаных"""
     pass
 
 
 class Joint(Line):
+    """"""
     pass
 
 
