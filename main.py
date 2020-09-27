@@ -31,9 +31,10 @@ class Vector:
 
     def __sub__(self, other):
         return Vector((self.coordinates[0] - other.coordinates[0], self.coordinates[1] - other.coordinates[1]))
+
     def __truediv__(self, other):
         if isinstance(self, Vector):
-            return self * (1/ other)
+            return self * (1 / other)
 
     def __mul__(self, other):
         if isinstance(other, Vector) and isinstance(self, Vector):
@@ -45,7 +46,7 @@ class Vector:
     def vector(x, y):
         x = Vector(x)
         y = Vector(y)
-        return Vector(y - x)
+        return y - x
 
     @staticmethod
     def int_pair(x, y):
@@ -54,80 +55,78 @@ class Vector:
 
 class Line:
     """Класс замкнутых ломаных"""
-    pass
 
+    def __init__(self, points=None):
+        self.points = points or []
+
+    def __str__(self):
+        return str(self.points)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def set_points(self, speeds):
+        for point in range(len(self.points)):
+            self.points[point] = self.points[point] + speeds[point]
+            if self.points[point].coordinates[0] > SCREEN_SIZE[0] or self.points[point].coordinates[0] < 0:
+                speeds[point].coordinates = (- speeds[point].coordinates[0], speeds[point].coordinates[1])
+            if self.points[point].coordinates[1] > SCREEN_SIZE[1] or self.points[point].coordinates[1] < 0:
+                speeds[point].coordinates = (speeds[point].coordinates[0], -speeds[point].coordinates[1])
+
+    def get_point(self, alpha, deg=None):
+        if deg is None:
+            deg = len(self.points) - 1
+        if deg == 0:
+            return self.points[0]
+        return self.points[deg] * alpha + self.get_point(alpha, deg - 1) * (1 - alpha)
+
+    def get_points(self, count):
+        alpha = 1 / count
+        result = []
+        for i in range(count):
+            result.append(self.get_point(i * alpha))
+        return result
+
+    def draw_points(self, style="points", width=4, color=(255, 255, 255)):
+        if style == "line":
+            for point_number in range(-1, len(self.points) - 1):
+                pygame.draw.line(gameDisplay, color,
+                                 (int(self.points[point_number].coordinates[0]),
+                                  int(self.points[point_number].coordinates[1])),
+                                 (int(self.points[point_number + 1].coordinates[0]),
+                                  int(self.points[point_number + 1].coordinates[1])), width)
+
+        elif style == "points":
+            for point in self.points:
+                pygame.draw.circle(gameDisplay, color,
+                                   (int(point.coordinates[0]), int(point.coordinates[1])), width)
 
 class Joint(Line):
     """"""
-    pass
+
+    def __init__(self, points=None):
+        super().__init__(points)
+
+    def __str__(self):
+        return super().__str__()
+
+    def __repr__(self):
+        return self.__str__()
 
 
-def sub(x, y):  # разность векторов
-    return x[0] - y[0], x[1] - y[1]
+    def get_joint(self, count):
+        if len(self.points) < 3:
+            return Joint()
+        result = []
+        for i in range(-2, len(self.points) - 2):
+            pnt = []
+            pnt.append((self.points[i] + self.points[i + 1]) * 0.5)
+            pnt.append(self.points[i + 1])
+            pnt.append((self.points[i + 1] + self.points[i + 2]) * 0.5)
+            pnt = Joint(pnt)
+            result.extend(pnt.get_points(count))
+        return Joint(result)
 
-
-def add(x, y):  # сумма векторов
-    return x[0] + y[0], x[1] + y[1]
-
-
-def length(x):  # длинна вектора
-    return sqrt(x[0] * x[0] + x[1] * x[1])
-
-
-def multiply(vec, k):  # умножение вектора на число
-    return vec[0] * k, vec[1] * k
-
-
-def scalar_multiply(vec, k):  # скалярное умножение векторов
-    return vec[0] * k, vec[1] * k
-
-
-def vector(x, y):  # создание вектора по началу (x) и концу (y) направленного отрезка
-    return sub(y, x)
-
-
-def draw_points(points, style="points", width=4, color=(255, 255, 255)):
-    if style == "line":
-        for point_number in range(-1, len(points) - 1):
-            pygame.draw.line(gameDisplay, color,
-                             (int(points[point_number].coordinates[0]), int(points[point_number].coordinates[1])),
-                             (int(points[point_number + 1].coordinates[0]),
-                              int(points[point_number + 1].coordinates[1])), width)
-
-    elif style == "points":
-        for point in points:
-            pygame.draw.circle(gameDisplay, color,
-                               (int(point.coordinates[0]), int(point.coordinates[1])), width)
-
-
-def get_point(points, alpha, deg=None):
-    if deg is None:
-        deg = len(points) - 1
-    if deg == 0:
-        return points[0]
-    return points[deg] * alpha + get_point(points, alpha, deg - 1) * (1 - alpha)
-
-
-def get_points(base_points, count):
-    alpha = 1 / count
-    result = []
-    for i in range(count):
-        result.append(get_point(base_points, i * alpha))
-    return result
-
-
-def get_joint(points, count):
-    if len(points) < 3:
-        return []
-    result = []
-    for i in range(-2, len(points) - 2):
-        pnt = []
-        pnt.append((points[i] + points[i + 1]) * 0.5)
-        pnt.append(points[i + 1])
-        pnt.append((points[i + 1] + points[i + 2]) * 0.5)
-
-        result.extend(get_points(pnt, count))
-    return result
 
 
 def display_help():
@@ -152,15 +151,6 @@ def display_help():
             text[1], True, (128, 128, 255)), (200, 100 + 30 * item))
 
 
-def set_points(points, speeds):
-    for point in range(len(points)):
-        points[point] = points[point] + speeds[point]
-        if points[point].coordinates[0] > SCREEN_SIZE[0] or points[point].coordinates[0] < 0:
-            speeds[point].coordinates = (- speeds[point].coordinates[0], speeds[point].coordinates[1])
-        if points[point].coordinates[1] > SCREEN_SIZE[1] or points[point].coordinates[1] < 0:
-            speeds[point].coordinates = (speeds[point].coordinates[0], -speeds[point].coordinates[1])
-
-
 if __name__ == "__main__":
     pygame.init()
     gameDisplay = pygame.display.set_mode(SCREEN_SIZE)
@@ -168,7 +158,7 @@ if __name__ == "__main__":
 
     steps = 20
     working = True
-    points = []
+    line = Joint()
     speeds = []
     show_help = False
     pause = False
@@ -196,17 +186,17 @@ if __name__ == "__main__":
                     steps -= 1 if steps > 1 else 0
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                points.append(Vector(event.pos))
+                line.points.append(Vector(event.pos))
                 coord = random() * 2, random() * 2
                 speeds.append(Vector(coord))
 
         gameDisplay.fill((0, 0, 0))
         color_param = (color_param + 1) % 360
         color.hsla = (color_param, 100, 50, 100)
-        draw_points(points)
-        draw_points(get_joint(points, steps), "line", 4, color)
+        line.draw_points()
+        line.get_joint(steps).draw_points("line", 4, color)
         if not pause:
-            set_points(points, speeds)
+            line.set_points(speeds)
         if show_help:
             display_help()
 
