@@ -7,23 +7,45 @@ SCREEN_SIZE = (1280, 720)
 
 class Vector:
     """Класс векторов"""
+
     def __init__(self, coordinates):
         self.coordinates = coordinates
 
+    def __str__(self):
+        return str(self.coordinates)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        if self.coordinates == other.coordinates:
+            return True
+        else:
+            return False
+
     def __len__(self):
-        return int(sqrt(self.coordinates[0] * self.coordinates[0] + self.coordinates[1] * self.coordinates[1]))
+        return round(sqrt(self.coordinates[0] * self.coordinates[0] + self.coordinates[1] * self.coordinates[1]))
 
     def __add__(self, other):
-        return self.coordinates[0] + other.coordinates[0], self.coordinates[1] + other.coordinates[1]
+        return Vector((self.coordinates[0] + other.coordinates[0], self.coordinates[1] + other.coordinates[1]))
 
     def __sub__(self, other):
-        return self.coordinates[0] - other.coordinates[0], self.coordinates[1] - other.coordinates[1]
+        return Vector((self.coordinates[0] - other.coordinates[0], self.coordinates[1] - other.coordinates[1]))
+    def __truediv__(self, other):
+        if isinstance(self, Vector):
+            return self * (1/ other)
 
     def __mul__(self, other):
         if isinstance(other, Vector) and isinstance(self, Vector):
             return self.coordinates[0] * other.coordinates[0] + self.coordinates[1] * other.coordinates[1]
         else:
-            return self.coordinates[0] * other, self.coordinates[1] * other
+            return Vector((self.coordinates[0] * other, self.coordinates[1] * other))
+
+    @staticmethod
+    def vector(x, y):
+        x = Vector(x)
+        y = Vector(y)
+        return Vector(y - x)
 
     @staticmethod
     def int_pair(x, y):
@@ -67,13 +89,15 @@ def vector(x, y):  # создание вектора по началу (x) и к
 def draw_points(points, style="points", width=4, color=(255, 255, 255)):
     if style == "line":
         for point_number in range(-1, len(points) - 1):
-            pygame.draw.line(gameDisplay, color, (int(points[point_number][0]), int(points[point_number][1])),
-                             (int(points[point_number + 1][0]), int(points[point_number + 1][1])), width)
+            pygame.draw.line(gameDisplay, color,
+                             (int(points[point_number].coordinates[0]), int(points[point_number].coordinates[1])),
+                             (int(points[point_number + 1].coordinates[0]),
+                              int(points[point_number + 1].coordinates[1])), width)
 
     elif style == "points":
         for point in points:
             pygame.draw.circle(gameDisplay, color,
-                               (int(point[0]), int(point[1])), width)
+                               (int(point.coordinates[0]), int(point.coordinates[1])), width)
 
 
 def get_point(points, alpha, deg=None):
@@ -81,7 +105,7 @@ def get_point(points, alpha, deg=None):
         deg = len(points) - 1
     if deg == 0:
         return points[0]
-    return add(multiply(points[deg], alpha), multiply(get_point(points, alpha, deg - 1), 1 - alpha))
+    return points[deg] * alpha + get_point(points, alpha, deg - 1) * (1 - alpha)
 
 
 def get_points(base_points, count):
@@ -98,9 +122,9 @@ def get_joint(points, count):
     result = []
     for i in range(-2, len(points) - 2):
         pnt = []
-        pnt.append(multiply(add(points[i], points[i + 1]), 0.5))
+        pnt.append((points[i] + points[i + 1]) * 0.5)
         pnt.append(points[i + 1])
-        pnt.append(multiply(add(points[i + 1], points[i + 2]), 0.5))
+        pnt.append((points[i + 1] + points[i + 2]) * 0.5)
 
         result.extend(get_points(pnt, count))
     return result
@@ -130,24 +154,14 @@ def display_help():
 
 def set_points(points, speeds):
     for point in range(len(points)):
-        points[point] = add(points[point], speeds[point])
-        if points[point][0] > SCREEN_SIZE[0] or points[point][0] < 0:
-            speeds[point] = (- speeds[point][0], speeds[point][1])
-        if points[point][1] > SCREEN_SIZE[1] or points[point][1] < 0:
-            speeds[point] = (speeds[point][0], -speeds[point][1])
+        points[point] = points[point] + speeds[point]
+        if points[point].coordinates[0] > SCREEN_SIZE[0] or points[point].coordinates[0] < 0:
+            speeds[point].coordinates = (- speeds[point].coordinates[0], speeds[point].coordinates[1])
+        if points[point].coordinates[1] > SCREEN_SIZE[1] or points[point].coordinates[1] < 0:
+            speeds[point].coordinates = (speeds[point].coordinates[0], -speeds[point].coordinates[1])
 
 
 if __name__ == "__main__":
-    v = Vector([5, 6])
-    m = Vector([1, 4])
-    print(v + m)
-    print(v - m)
-    print(len(v))
-    print(v * 3)
-    print(v * m)
-    # print(3 * v)
-    print(isinstance(v, Vector))
-    print(isinstance(Vector.int_pair(1, 2), tuple))
     pygame.init()
     gameDisplay = pygame.display.set_mode(SCREEN_SIZE)
     pygame.display.set_caption("Screen Saver")
@@ -182,8 +196,9 @@ if __name__ == "__main__":
                     steps -= 1 if steps > 1 else 0
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                points.append(event.pos)
-                speeds.append((random() * 2, random() * 2))
+                points.append(Vector(event.pos))
+                coord = random() * 2, random() * 2
+                speeds.append(Vector(coord))
 
         gameDisplay.fill((0, 0, 0))
         color_param = (color_param + 1) % 360
